@@ -14,19 +14,23 @@ contract SimpleNFT is ERC721, Ownable2Step {
     error MintIsClosed();
     error MintIsOpen();
     error OperationNotSucced();
-    error MintNotFree();
+    error MintForETHNotAllowed();
 
     event Withdraw(address indexed recient, uint256 indexed amount);
+    event AddedToAllowlsit(address indexed user);
+    event RemovedFromAllowlsit(address indexed user);
+    event MintClosed(address indexed admin, uint256 timestamp);
+    event MintOpened(address indexed admin, uint256 timestamp);
 
     uint256 private constant MINT_OPEN = 1;
     uint256 private constant MINT_CLOSED = 2;
     uint256 private constant IN_ALLOWLIST = 1;
-    uint256 mintStatus = 1;
+    uint256 public mintStatus;
 
     mapping(address user => uint256 isAdded) public allowlist;
 
     constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) Ownable(msg.sender) {
-
+        mintStatus = MINT_OPEN;
     }
 
     modifier whenNotClosed() {
@@ -41,7 +45,7 @@ contract SimpleNFT is ERC721, Ownable2Step {
 
     function userMint(address to, uint256 tokenId) external payable whenNotClosed {
         if (allowlist[msg.sender] == IN_ALLOWLIST) {
-            if (msg.value != 0) revert MintNotFree();
+            if (msg.value != 0) revert MintForETHNotAllowed();
             _safeMint(msg.sender, tokenId);
         } else {
             if (msg.value != 0.01 ether) revert InvalidETHAmount();
@@ -61,27 +65,36 @@ contract SimpleNFT is ERC721, Ownable2Step {
         if(user == address(0)) revert InvalidAddress();
         if(allowlist[user] == 1) revert AlreadyInAllowlist();
         allowlist[user] = 1;
+        emit AddedToAllowlsit(user);
     }
 
-    function removeToAllowlist(address user) external onlyOwner whenNotClosed {
+    function removeFromAllowlist(address user) external onlyOwner whenNotClosed {
         if(user == address(0)) revert InvalidAddress();
         if(allowlist[user] == 2) revert NotInAllowlist();
         allowlist[user] = 2;
+        emit RemovedFromAllowlsit(user);
     }
 
     function closeMint() external onlyOwner whenNotClosed {
         mintStatus = MINT_CLOSED;
+        emit MintClosed(msg.sender, block.timestamp);
+
     }
 
     function openMint() external onlyOwner whenClosed {
         mintStatus = MINT_OPEN;
+        emit MintOpened(msg.sender, block.timestamp);
     }
 
     function emergencyWithdraw() external onlyOwner {
         address admin = owner();
-        (bool success,) = owner().call{value: address(this).balance}("");
+        uint256 amountToWithdraw = address(this).balance;
+        (bool success,) = owner().call{value: amountToWithdraw}("");
         if (!success) revert OperationNotSucced();
-        emit Withdraw(admin, address(this).balance);
+        emit Withdraw(admin, amountToWithdraw);
     }
 
+    function retrieveConstants() external pure returns (uint256, uint256, uint256) {
+        return (MINT_OPEN, MINT_CLOSED, IN_ALLOWLIST);
+    }
 }
