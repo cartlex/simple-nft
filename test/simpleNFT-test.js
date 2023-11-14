@@ -37,7 +37,7 @@ describe("SimpleNFT", function () {
         it("Should set the `mintStatus` to 1", async function () {
             const { simpleNFT } = await loadFixture(deployOneYearLockFixture);
 
-            expect(await simpleNFT.getMintStatus()).to.equal(1);
+            expect(await simpleNFT.retrieveMintStatus()).to.equal(1);
         });
 
         it("Should set constants", async function () {
@@ -52,6 +52,28 @@ describe("SimpleNFT", function () {
             const mintPrice = ethers.utils.parseEther("0.01");
             expect(MINT_PRICE).to.eq(mintPrice);
             expect(FEE_DENOMINATOR).to.eq(10_000);
+        });
+
+        it("Should retrieve the `maxMintAmount`", async function () {
+            const { simpleNFT } = await loadFixture(deployOneYearLockFixture);
+            let maxMintAmount = await simpleNFT.retrieveMaxMintAmount();
+            expect(maxMintAmount).to.eq(5);
+        });
+
+        it("Should retrieve the `maxTotalSupply`", async function () {
+            const { simpleNFT } = await loadFixture(deployOneYearLockFixture);
+            let maxTotalSupply = await simpleNFT.retrieveMaxTotalSupply();
+            expect(maxTotalSupply).to.eq(10_000);
+        });
+
+        it("Should support interface ids", async function () {
+            // 0x2a55205a - IERC2981 interfaceId
+            // 0x80ac58cd - IERC721 interfaceId
+            let IERC2981InterfaceId = 0x2a55205a;
+            let IERC721InterfaceId = 0x80ac58cd;
+            const { simpleNFT } = await loadFixture(deployOneYearLockFixture);
+            expect(await simpleNFT.supportsInterface(IERC2981InterfaceId)).to.equal(true);
+            expect(await simpleNFT.supportsInterface(IERC721InterfaceId)).to.equal(true);
         });
     });
 

@@ -249,7 +249,15 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     /**
      * @dev Function to retrieve current `_mintStatus` value.
      */ 
-    function getMintStatus() external view returns (uint256) {
+    function retrieveMintStatus() external view returns (uint256) {
         return _mintStatus;
+    }
+
+    function retrieveMaxTotalSupply() external view returns (uint256) {
+        return maxTotalSupply;
+    }
+
+    function retrieveMaxMintAmount() external view returns (uint256) {
+        return maxMintAmount;
     }
 }
