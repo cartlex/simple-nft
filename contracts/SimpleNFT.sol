@@ -149,6 +149,15 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     /**
+     * @notice Function allows user to transfer its NFT to other user.
+     * @param to Address to send NFT to.
+     * @param tokenId Id of NFT to send.
+     */ 
+    function transfer(address to, uint256 tokenId) external {
+        _safeTransfer(msg.sender, to, tokenId);
+    }
+
+    /**
      * @notice Function allows owner to add user to allowlist
      * @dev Can only be used by owner, mint must be open
      * @param user Address of user which will be added to allowlist

@@ -163,5 +163,15 @@ describe("SimpleNFT", function () {
             await simpleNFT.closeMint();
             await expect(simpleNFT.adminMint(user1.address)).to.be.revertedWithCustomError(simpleNFT, "MintIsClosed");
         });
+
+        it("User can transfer NFT after mint to another user", async function () {
+            const { simpleNFT, user1, user2 } = await loadFixture(deployOneYearLockFixture);
+            const ethToSend = ethers.utils.parseEther("0.01");
+            await simpleNFT.connect(user1).userMint({value: ethToSend });
+            expect(await simpleNFT.balanceOf(user1.address)).to.eq(1);
+            await simpleNFT.connect(user1).transfer(user2.address, 1);
+            expect(await simpleNFT.balanceOf(user1.address)).to.eq(0);
+            expect(await simpleNFT.balanceOf(user2.address)).to.eq(1);
+        })
     });
 });
