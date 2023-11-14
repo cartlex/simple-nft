@@ -22,7 +22,6 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     error MintIsOpen();
     error OperationNotSucced();
     error MintForETHNotAllowed();
-    error InvalidArrayLength();
     error InvalidFeeAmount();
     error InvalidMintAmount();
     error ExceedMaxTotalSupply();
@@ -33,18 +32,20 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     event RemovedFromAllowlsit(address indexed user);
     event MintClosed(address indexed admin, uint256 timestamp);
     event MintOpened(address indexed admin, uint256 timestamp);
+    event Minted(address indexed recipient, uint256 indexed tokenId);
 
     uint256 private constant MINT_OPEN = 1;
     uint256 private constant MINT_CLOSED = 2;
     uint256 private constant IN_ALLOWLIST = 1;
     uint256 private constant MINT_PRICE = 0.01 ether;
     uint96 private constant FEE_DENOMITATOR = 10_000;
+
     uint256 public immutable maxTotalSupply;
     uint256 public immutable maxMintAmount;
-    uint256 private _nextTokenId;
-    string private baseURI;
 
-    uint256 public mintStatus;
+    uint256 private _nextTokenId;
+    uint256 private _mintStatus;
+    string private _tokenBaseURI;
 
     mapping(address user => uint256 isAdded) public allowlist;
 
@@ -54,11 +55,13 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         uint256 _maxTotalSupply,
         uint256 _maxMintAmount,
         address royaltyReceiver,
-        uint96 royaltyPersent
+        uint96 royaltyPersent,
+        string memory tokenBaseURI_
     ) ERC721(name_, symbol_) Ownable(msg.sender) {
-        mintStatus = MINT_OPEN;
+        _mintStatus = MINT_OPEN;
         maxTotalSupply = _maxTotalSupply;
         maxMintAmount = _maxMintAmount;
+        _tokenBaseURI = tokenBaseURI_;
 
         if (royaltyReceiver == address(0)) revert InvalidAddress();
         if (royaltyPersent > FEE_DENOMITATOR) revert InvalidFeeAmount();
@@ -66,12 +69,12 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     modifier whenNotClosed() {
-        if (mintStatus == MINT_CLOSED) revert MintIsClosed();
+        if (_mintStatus == MINT_CLOSED) revert MintIsClosed();
         _;
     }
 
     modifier whenClosed() {
-        if (mintStatus == MINT_OPEN) revert MintIsOpen();
+        if (_mintStatus == MINT_OPEN) revert MintIsOpen();
         _;
     }
 
@@ -87,6 +90,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
 
         _safeMint(to, tokenId);
+        emit Minted(to, tokenId);
     }
 
     /**
@@ -105,6 +109,8 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
             if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
 
             _safeMint(msg.sender, tokenId);
+            emit Minted(msg.sender, tokenId);
+
         } else {
             if (msg.value != MINT_PRICE) revert InvalidETHAmount();
 
@@ -112,31 +118,29 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
             if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
 
             _safeMint(msg.sender, tokenId);
+            emit Minted(msg.sender, tokenId);
+
         }
     }
 
     /**
-     * @notice Function allows admin to mint an NFT to array of users with an specific amounts.
+     * @notice Function allows admin to mint a specific amount of NFT to specific user.
      * @dev Function use `nonReentrant` modifier to prevent reentrancy via `onERC721Received` function. Mint must be open.
-     * @param users Array of user addresses that receive an a nft.
-     * @param amounts Array of amounts of NFT that each user receive.
+     * @param to Address to mint NFT to.
+     * @param amounts Amount of tokens to mint.
      */ 
     function adminMintBatch(
-        address[] memory users,
-        uint256[] memory amounts
+        address to,
+        uint256 amounts
     ) external nonReentrant onlyOwner whenNotClosed {
-        uint256 arrayLength = users.length;
-        if (amounts.length != arrayLength) revert InvalidArrayLength();
-
         uint256 tokenId = _nextTokenId;
         uint256 num;
+        if (amounts + balanceOf(msg.sender) > maxMintAmount) revert InvalidMintAmount();
 
-        for (uint i; i < arrayLength; ) {
-            if (amounts[i] + balanceOf(users[i]) > maxMintAmount) revert InvalidMintAmount();
-
-            ++tokenId;
+        for (uint i; i < amounts;) {
             if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
-            _safeMint(users[i], tokenId);
+            _safeMint(to, tokenId);
+            ++tokenId;
 
             unchecked {
                 ++i;
@@ -146,14 +150,16 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         }
 
         _nextTokenId = num;
+        emit Minted(to, amounts);
     }
 
     /**
      * @notice Function allows user to transfer its NFT to other user.
+     * @dev Function use `nonReentrant` modifier to prevent reentrancy via `onERC721Received` function. Mint must be open.
      * @param to Address to send NFT to.
      * @param tokenId Id of NFT to send.
      */ 
-    function transfer(address to, uint256 tokenId) external {
+    function transfer(address to, uint256 tokenId) external nonReentrant {
         _safeTransfer(msg.sender, to, tokenId);
     }
 
@@ -188,7 +194,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
      * @dev Mint must be open
      */ 
     function closeMint() external onlyOwner whenNotClosed {
-        mintStatus = MINT_CLOSED;
+        _mintStatus = MINT_CLOSED;
         emit MintClosed(msg.sender, block.timestamp);
     }
 
@@ -197,7 +203,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
      * @dev Mint must be closed
      */ 
     function openMint() external onlyOwner whenClosed {
-        mintStatus = MINT_OPEN;
+        _mintStatus = MINT_OPEN;
         emit MintOpened(msg.sender, block.timestamp);
     }
 
@@ -219,9 +225,10 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         return (MINT_OPEN, MINT_CLOSED, IN_ALLOWLIST, MINT_PRICE, FEE_DENOMITATOR);
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC2981, ERC721) returns (bool) {
+    /**
+     * @dev Function to check which interfaces contract support
+     */ 
+    function supportsInterface(bytes4 interfaceId) public view override(ERC2981, ERC721) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
@@ -232,7 +239,17 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         revert OperationNotAllowed();
     }
 
+    /**
+     * @dev Function to check `_tokenBaseURI` parameter.
+     */ 
     function _baseURI() internal view override returns (string memory) {
-        return baseURI;
+        return _tokenBaseURI;
+    }
+
+    /**
+     * @dev Function to retrieve current `_mintStatus` value.
+     */ 
+    function getMintStatus() external view returns (uint256) {
+        return _mintStatus;
     }
 }
