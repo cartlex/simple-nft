@@ -6,6 +6,8 @@ require("./tasks/admin-mint");
 require("./tasks/admin-mint-batch");
 require("./tasks/open-mint");
 require("./tasks/close-mint");
+require("./tasks/add-to-allowlist");
+require("./tasks/remove-from-allowlist");
 
 module.exports = {
     solidity: "0.8.21",
