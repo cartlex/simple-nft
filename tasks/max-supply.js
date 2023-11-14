@@ -1,7 +1,7 @@
 const { task } = require("hardhat/config");
 
 async function main() {
-    const contractAddress = "0x1cA9ae0DDC2AF6A625a2524d5B8AFC3e4cd4bD10";
+    const contractAddress = "0x496E4Ff672290462138e20C486f676eD3B4E7300";
     const contract = await hre.ethers.getContractAt("SimpleNFT", contractAddress);
     return contract;
 }
