@@ -144,7 +144,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
 
         for (uint i; i < amounts;) {
             if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
-            mintedTokensPerUser[msg.sender]++;
+            mintedTokensPerUser[msg.sender] = mintedTokensPerUser[msg.sender] + amounts;
             _safeMint(to, tokenId);
             ++tokenId;
 
