@@ -50,6 +50,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     string private _tokenBaseURI;
 
     mapping(address user => uint256 isAdded) public allowlist;
+    mapping(address user => uint256 amountMinted) public mintedTokensPerUser;
 
     constructor(
         string memory name_,
@@ -86,11 +87,11 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
      * @param to Address of the user to mint NFT to.
      */ 
     function adminMint(address to) external nonReentrant onlyOwner whenNotClosed {
-        if (balanceOf(to) >= maxMintAmount) revert InvalidMintAmount();
+        if (mintedTokensPerUser[to] >= maxMintAmount) revert InvalidMintAmount();
         uint256 tokenId = ++_nextTokenId;
 
         if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
-
+        mintedTokensPerUser[to]++;
         _safeMint(to, tokenId);
         emit Minted(to, tokenId);
     }
@@ -102,13 +103,14 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
      * Mint must be open.
      */ 
     function userMint() external payable nonReentrant whenNotClosed {
-        if (balanceOf(msg.sender) >= maxMintAmount) revert InvalidMintAmount();
+        if (mintedTokensPerUser[msg.sender] >= maxMintAmount) revert InvalidMintAmount();
 
         if (allowlist[msg.sender] == IN_ALLOWLIST) {
             if (msg.value != 0) revert MintForETHNotAllowed();
 
             uint256 tokenId = ++_nextTokenId;
             if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
+            mintedTokensPerUser[msg.sender]++;
 
             _safeMint(msg.sender, tokenId);
             emit Minted(msg.sender, tokenId);
@@ -118,6 +120,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
 
             uint256 tokenId = ++_nextTokenId;
             if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
+            mintedTokensPerUser[msg.sender]++;
 
             _safeMint(msg.sender, tokenId);
             emit Minted(msg.sender, tokenId);
@@ -137,10 +140,11 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     ) external nonReentrant onlyOwner whenNotClosed {
         uint256 tokenId = _nextTokenId;
         uint256 num;
-        if (amounts + balanceOf(msg.sender) > maxMintAmount) revert InvalidMintAmount();
+        if (amounts + mintedTokensPerUser[msg.sender] > maxMintAmount) revert InvalidMintAmount();
 
         for (uint i; i < amounts;) {
             if (tokenId > maxTotalSupply) revert ExceedMaxTotalSupply();
+            mintedTokensPerUser[msg.sender]++;
             _safeMint(to, tokenId);
             ++tokenId;
 
