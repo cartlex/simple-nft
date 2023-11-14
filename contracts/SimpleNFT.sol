@@ -81,9 +81,9 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @notice Function allows owner to mint an NFT to specific address
-     * @dev Can only be used by owner, mint must be open
-     * @param to Address of the user to mint NFT to 
+     * @notice Function allows owner to mint an NFT to specific address.
+     * @dev Can only be used by owner, mint must be open.
+     * @param to Address of the user to mint NFT to.
      */ 
     function adminMint(address to) external nonReentrant onlyOwner whenNotClosed {
         if (balanceOf(to) >= maxMintAmount) revert InvalidMintAmount();
@@ -166,9 +166,9 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @notice Function allows owner to add user to allowlist
-     * @dev Can only be used by owner, mint must be open
-     * @param user Address of user which will be added to allowlist
+     * @notice Function allows owner to add user to allowlist.
+     * @dev Can only be used by owner, mint must be open.
+     * @param user Address of user which will be added to allowlist.
      */ 
     function addToAllowlist(address user) external onlyOwner whenNotClosed {
         if (user == address(0)) revert InvalidAddress();
@@ -178,9 +178,9 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @notice Function allows owner to remove user from allowlist
-     * @dev Can only be used by owner, mint must be open
-     * @param user Address of user which will be removed from allowlist
+     * @notice Function allows owner to remove user from allowlist.
+     * @dev Can only be used by owner, mint must be open.
+     * @param user Address of user which will be removed from allowlist.
      */ 
     function removeFromAllowlist(
         address user
@@ -192,7 +192,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @notice Function allows owner to close mint functionality
+     * @notice Function allows owner to close mint functionality.
      * @dev Mint must be open
      */ 
     function closeMint() external onlyOwner whenNotClosed {
@@ -201,7 +201,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @notice Function allows owner to open mint functionality
+     * @notice Function allows owner to open mint functionality.
      * @dev Mint must be closed
      */ 
     function openMint() external onlyOwner whenClosed {
@@ -210,7 +210,7 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @notice Function allows owner to withdraw funds from contract
+     * @notice Function allows owner to withdraw funds from contract.
      */ 
     function emergencyWithdraw() external onlyOwner {
         address admin = owner();
@@ -221,21 +221,21 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     }
 
     /**
-     * @notice Helper function to check constant values
+     * @notice Helper function to check constant values.
      */ 
     function retrieveConstants() external pure returns (uint256, uint256, uint256, uint256, uint96) {
         return (MINT_OPEN, MINT_CLOSED, IN_ALLOWLIST, MINT_PRICE, FEE_DENOMITATOR);
     }
 
     /**
-     * @dev Function to check which interfaces contract support
+     * @dev Function to check which interfaces contract support.
      */ 
     function supportsInterface(bytes4 interfaceId) public view override(ERC2981, ERC721) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
     /**
-     * @dev Function overriden to not allow owner to renounce the ownership
+     * @dev Function overriden to not allow owner to renounce the ownership.
      */ 
     function renounceOwnership() public view override onlyOwner {
         revert OperationNotAllowed();
