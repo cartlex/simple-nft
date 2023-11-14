@@ -7,10 +7,10 @@ const { expect } = require("chai");
 
 describe("SimpleNFT", function () {
     async function deployOneYearLockFixture() {
-        const [owner, user1, user2] = await ethers.getSigners();
+        const [owner, user1, user2, royaltyReceiver] = await ethers.getSigners();
 
         const SimpleNFT = await ethers.getContractFactory("SimpleNFT");
-        const simpleNFT = await SimpleNFT.deploy("Simple", "SMPL");
+        const simpleNFT = await SimpleNFT.deploy("Simple", "SMPL", 10000, 5, royaltyReceiver.address, 500);
 
         return { simpleNFT, owner, user1, user2 };
     }
@@ -44,10 +44,14 @@ describe("SimpleNFT", function () {
             const { simpleNFT } = await loadFixture(deployOneYearLockFixture);
 
             const constants = await simpleNFT.retrieveConstants();
-            [MINT_OPEN, MINT_CLOSED, IN_ALLOWLIST] = constants;
+            [MINT_OPEN, MINT_CLOSED, IN_ALLOWLIST, MINT_PRICE, FEE_DENOMINATOR] = constants;
             expect(MINT_OPEN).to.eq(1);
             expect(MINT_CLOSED).to.eq(2);
             expect(IN_ALLOWLIST).to.eq(1);
+
+            const mintPrice = ethers.utils.parseEther("0.01");
+            expect(MINT_PRICE).to.eq(mintPrice);
+            expect(FEE_DENOMINATOR).to.eq(10_000);
         });
     });
 
@@ -114,19 +118,19 @@ describe("SimpleNFT", function () {
 
         it("Admin can mint when mint is open", async function () {
             const { simpleNFT, user1 } = await loadFixture(deployOneYearLockFixture);
-            await simpleNFT.adminMint(user1.address, 1);
+            await simpleNFT.adminMint(user1.address);
         });
 
         it("Admin can't mint when mint is closed", async function () {
             const { simpleNFT, user1 } = await loadFixture(deployOneYearLockFixture);
             await simpleNFT.closeMint();
-            await expect(simpleNFT.adminMint(user1.address, 1)).to.be.revertedWithCustomError(simpleNFT, "MintIsClosed");
+            await expect(simpleNFT.adminMint(user1.address)).to.be.revertedWithCustomError(simpleNFT, "MintIsClosed");
         });
 
         it("Admin can use `emergencyWithdraw` to withdraw funds from contracts", async function () {
             const { simpleNFT, owner, user1 } = await loadFixture(deployOneYearLockFixture);
             const ethToSend = ethers.utils.parseEther("0.01");
-            await simpleNFT.connect(user1).userMint(user1.address, 1, { value: ethToSend });
+            await simpleNFT.connect(user1).userMint({ value: ethToSend });
             let simpleNFTBalance = await ethers.provider.getBalance(simpleNFT.address);
             let emergencyWithdrawTx = await simpleNFT.emergencyWithdraw();
             await expect(emergencyWithdrawTx).to.emit(simpleNFT, "Withdraw").withArgs(owner.address, simpleNFTBalance);
@@ -138,9 +142,9 @@ describe("SimpleNFT", function () {
             const { simpleNFT, user1 } = await loadFixture(deployOneYearLockFixture);
             const incorrectEthToSend = ethers.utils.parseEther("0.02");
             const ethToSend = ethers.utils.parseEther("0.01");
-            await expect(simpleNFT.connect(user1).userMint(user1.address, 1, { value: incorrectEthToSend })).to.be.revertedWithCustomError(simpleNFT, "InvalidETHAmount");
+            await expect(simpleNFT.connect(user1).userMint({ value: incorrectEthToSend })).to.be.revertedWithCustomError(simpleNFT, "InvalidETHAmount");
             expect(await simpleNFT.balanceOf(user1.address)).to.eq(0);
-            await simpleNFT.connect(user1).userMint(user1.address, 1, { value: ethToSend });
+            await simpleNFT.connect(user1).userMint({value: ethToSend });
             expect(await simpleNFT.balanceOf(user1.address)).to.eq(1);
         });
 
@@ -148,16 +152,16 @@ describe("SimpleNFT", function () {
             const { simpleNFT, user1 } = await loadFixture(deployOneYearLockFixture);
             await simpleNFT.addToAllowlist(user1.address);          
             const ethToSend = ethers.utils.parseEther("0.01");
-            await expect(simpleNFT.connect(user1).userMint(user1.address, 1, { value: ethToSend })).to.be.revertedWithCustomError(simpleNFT, "MintForETHNotAllowed");
+            await expect(simpleNFT.connect(user1).userMint({ value: ethToSend })).to.be.revertedWithCustomError(simpleNFT, "MintForETHNotAllowed");
             expect(await simpleNFT.balanceOf(user1.address)).to.eq(0);
-            await simpleNFT.connect(user1).userMint(user1.address, 1);
+            await simpleNFT.connect(user1).userMint();
             expect(await simpleNFT.balanceOf(user1.address)).to.eq(1);
         });
 
         it("User can't mint when mint is closed", async function () {
             const { simpleNFT, user1 } = await loadFixture(deployOneYearLockFixture);
             await simpleNFT.closeMint();
-            await expect(simpleNFT.adminMint(user1.address, 1)).to.be.revertedWithCustomError(simpleNFT, "MintIsClosed");
+            await expect(simpleNFT.adminMint(user1.address)).to.be.revertedWithCustomError(simpleNFT, "MintIsClosed");
         });
     });
 });

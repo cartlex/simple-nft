@@ -54,15 +54,15 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         uint256 _maxTotalSupply,
         uint256 _maxMintAmount,
         address royaltyReceiver,
-        uint96 feePersent
+        uint96 royaltyPersent
     ) ERC721(name_, symbol_) Ownable(msg.sender) {
         mintStatus = MINT_OPEN;
         maxTotalSupply = _maxTotalSupply;
         maxMintAmount = _maxMintAmount;
 
         if (royaltyReceiver == address(0)) revert InvalidAddress();
-        if (feePersent > FEE_DENOMITATOR) revert InvalidFeeAmount();
-        _setDefaultRoyalty(royaltyReceiver, feePersent);
+        if (royaltyPersent > FEE_DENOMITATOR) revert InvalidFeeAmount();
+        _setDefaultRoyalty(royaltyReceiver, royaltyPersent);
     }
 
     modifier whenNotClosed() {
@@ -80,7 +80,6 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
      * @dev Can only be used by owner, mint must be open
      * @param to Address of the user to mint NFT to 
      */ 
-
     function adminMint(address to) external nonReentrant onlyOwner whenNotClosed {
         if (balanceOf(to) >= maxMintAmount) revert InvalidMintAmount();
         uint256 tokenId = ++_nextTokenId;
@@ -207,8 +206,8 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     /**
      * @notice Helper function to check constant values
      */ 
-    function retrieveConstants() external pure returns (uint256, uint256, uint256) {
-        return (MINT_OPEN, MINT_CLOSED, IN_ALLOWLIST);
+    function retrieveConstants() external pure returns (uint256, uint256, uint256, uint256, uint96) {
+        return (MINT_OPEN, MINT_CLOSED, IN_ALLOWLIST, MINT_PRICE, FEE_DENOMITATOR);
     }
 
     function supportsInterface(
