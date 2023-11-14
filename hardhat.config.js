@@ -8,6 +8,8 @@ require("./tasks/open-mint");
 require("./tasks/close-mint");
 require("./tasks/add-to-allowlist");
 require("./tasks/remove-from-allowlist");
+require("./tasks/transfer");
+require("./tasks/emergency-withdraw");
 
 module.exports = {
     solidity: "0.8.21",

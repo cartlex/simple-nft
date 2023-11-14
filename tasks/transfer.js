@@ -13,21 +13,13 @@ async function getContract() {
     return contract;
 }
 
-task("user-mint", "user mint an NFT to specific address")
+task("transfer", "user mint an NFT to specific address")
+    .addParam("user", "address to transfer NFT to")
+    .addParam("tokenId", "ID of token to transfer")
     .setAction(async (taskArgs, hre) => {
         const contract = await getContract();
         const user = await getSigner();
-        await contract.connect(user).userMint();
+        await contract.connect(user).transfer(taskArgs.user, taskArgs.tokenId);
 
-        console.log("user was successfully minted an NFT");
-    });
-
-task("user-mint-eth", "user mint an NFT for 0.01 eth")
-    .setAction(async (taskArgs, hre) => {
-        const contract = await getContract();
-        const user = await getSigner();
-        const amount = ethers.utils.parseEther("0.01");
-        await contract.connect(user).userMint({value: amount});
-
-        console.log(`user was successfully minted an NFT for ${amount}`);
+        console.log(`NFT ${taskArgs.tokenId} was successfully transferred to ${taskArgs.user}`);
     });
