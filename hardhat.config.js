@@ -27,6 +27,6 @@ module.exports = {
         }
     },
     etherscan: {
-        apiKey: process.env.ETHERSCAN_API // mumbai
+        apiKey: process.env.ETHERSCAN_API
     },
 };
