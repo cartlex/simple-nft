@@ -7,10 +7,12 @@ import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @title simple NFT contract
-/// @author cartlex
-/// @notice You can use this contract for only the most basic simulation
-/// @dev All function calls are currently implemented without side effects
+/**
+ * @title simple NFT contract
+ * @author cartlex
+ * @notice You can use this contract for only the most basic simulation
+ * @dev All function calls are currently implemented without side effects
+ */ 
 contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     // errors
     error OperationNotAllowed();
@@ -253,10 +255,16 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
         return _mintStatus;
     }
 
+    /**
+     * @dev Function to retrieve current `maxTotalSupply` value.
+     */ 
     function retrieveMaxTotalSupply() external view returns (uint256) {
         return maxTotalSupply;
     }
 
+    /**
+     * @dev Function to retrieve current `maxMintAmount` value.
+     */
     function retrieveMaxMintAmount() external view returns (uint256) {
         return maxMintAmount;
     }
