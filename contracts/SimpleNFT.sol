@@ -15,6 +15,7 @@ contract SimpleNFT is ERC721, Ownable2Step {
     error MintIsOpen();
     error OperationNotSucced();
     error MintForETHNotAllowed();
+    error InvalidArrayLength();
 
     event Withdraw(address indexed recient, uint256 indexed amount);
     event AddedToAllowlsit(address indexed user);
@@ -43,6 +44,10 @@ contract SimpleNFT is ERC721, Ownable2Step {
         _;
     }
 
+    function adminMint(address to, uint256 tokenId) external onlyOwner whenNotClosed {
+        _safeMint(to, tokenId);
+    }
+
     function userMint(address to, uint256 tokenId) external payable whenNotClosed {
         if (allowlist[msg.sender] == IN_ALLOWLIST) {
             if (msg.value != 0) revert MintForETHNotAllowed();
@@ -53,8 +58,17 @@ contract SimpleNFT is ERC721, Ownable2Step {
         }
     }
 
-    function adminMint(address to, uint256 tokenId) external onlyOwner whenNotClosed {
-        _safeMint(to, tokenId);
+    function userMintBatch(address[] memory users, uint256[] memory tokenIds) external whenNotClosed {
+        uint256 arrayLength = users.length;
+        if (tokenIds.length != arrayLength) revert InvalidArrayLength();
+
+        for (uint i; i < arrayLength;) {
+            _safeMint(users[i], tokenIds[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function renounceOwnership() public view override onlyOwner {
