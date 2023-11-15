@@ -42,8 +42,8 @@ contract SimpleNFT is ERC721, ERC2981, Ownable2Step, ReentrancyGuard {
     uint256 private constant MINT_PRICE = 0.01 ether;
     uint96 private constant FEE_DENOMITATOR = 10_000;
 
-    uint256 public immutable maxTotalSupply;
-    uint256 public immutable maxMintAmount;
+    uint256 private immutable maxTotalSupply;
+    uint256 private immutable maxMintAmount;
 
     uint256 private _nextTokenId;
     uint256 private _mintStatus;
